@@ -353,12 +353,19 @@ namespace MonoMod {
             return rp;
         }
 
+        public void AddDependencyDir(string path)
+        {
+            if (!DependencyDirs.Contains(path))
+            {
+                DependencyDirs.Add(path);
+            }
+        }
 
         public virtual void ReadMod(string path) {
             if (Directory.Exists(path)) {
                 Log($"[ReadMod] Loading mod dir: {path}");
                 string mainName = Module.Name.Substring(0, Module.Name.Length - 3);
-                DependencyDirs.Add(path);
+                AddDependencyDir(path);
                 foreach (string modFile in Directory.GetFiles(path))
                     if (Path.GetFileName(modFile).StartsWith(mainName) && modFile.ToLower().EndsWith(".mm.dll"))
                         ReadMod(modFile);
@@ -366,6 +373,7 @@ namespace MonoMod {
             }
 
             Log($"[ReadMod] Loading mod: {path}");
+            AddDependencyDir(Directory.GetParent(path).FullName);
             ModuleDefinition mod = ModuleDefinition.ReadModule(path, GenReaderParameters(false));
             MapDependencies(mod);
             ParseRules(mod);
@@ -595,8 +603,9 @@ namespace MonoMod {
                         cap = ((MethodReference) mtp).Resolve() as ICustomAttributeProvider;
                     else if (mtp is FieldReference)
                         cap = ((FieldReference) mtp).Resolve() as ICustomAttributeProvider;
-                } catch {
+                } catch(Exception e) {
                     // Could not resolve assembly - f.e. MonoModRules refering to MonoMod itself
+                    Console.WriteLine(e.Message + " when resolving " + mtp);
                     cap = null;
                 }
 

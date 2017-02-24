@@ -19,14 +19,20 @@ namespace MonoMod.MonoMod {
             }
 
             string pathIn = args[0];
-            string pathOut = args.Length != 1 ? args[args.Length - 1] : ("MONOMODDED_" + pathIn);
+            string pathOut;
+            if (args.Length != 1) {
+                pathOut = args[args.Length - 1];
+            } else {
+                pathOut = Path.Combine(Directory.GetParent(pathIn).FullName, "MONOMODDED_" + Path.GetFileName(pathIn));
+            }
 
             if (File.Exists(pathOut)) File.Delete(pathOut);
 
             using (MonoModder mm = new MonoModder() {
-                Input = File.OpenRead(args[0]),
+                Input = File.OpenRead(pathIn),
                 Output = File.OpenWrite(pathOut)
             }) {
+                mm.AddDependencyDir(Directory.GetParent(pathOut).FullName);
                 mm.Read(false);
 
                 if (args.Length <= 2) {
@@ -38,6 +44,7 @@ namespace MonoMod.MonoMod {
                         mm.ReadMod(args[i]);
                 }
 
+                mm.AddDependencyDir(Directory.GetParent(pathIn).FullName);
                 mm.Read(true);
 
                 mm.Log("[Main] mm.AutoPatch();");
